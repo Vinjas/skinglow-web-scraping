@@ -1,7 +1,7 @@
 from selenium.webdriver.common.by import By
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-from src.utils.selenium_scroll_page import scroll_down
+from src.utils.scroll_down import scroll_down
 import time
 
 host = 'https://www.sephora.com'

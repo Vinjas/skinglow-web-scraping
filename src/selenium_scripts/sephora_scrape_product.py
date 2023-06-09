@@ -4,10 +4,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
 from src.utils.find_matching_data import find_matching_skin, find_matching_highlights, find_matching_concerns
-from src.utils.selenium_scroll_page import scroll_down
+from src.utils.parse_ingredients_list import parse_ingredients_list
+from src.utils.scroll_down import scroll_down
 
 from src.constants import OVERVIEW_OPTION, CLINICAL_RESULTS_OPTION, IMPORTANT_INGREDIENTS_OPTION, SKIN_TYPE_OPTION, \
-    CONCERNS_OPTION, EXTRA_INFO_OPTION, SKIN_TYPES_LIST, HIGHLIGHT_LIST, CONCERNS_LIST
+    CONCERNS_OPTION, EXTRA_INFO_OPTION, SKIN_TYPES_LIST, HIGHLIGHT_LIST, CONCERNS_LIST, VEGAN
 
 import time
 import pandas as pd
@@ -29,7 +30,7 @@ service = Service(path_chromedriver)
 driver = webdriver.Chrome(service=service, options=options)
 
 driver.get(host)
-time.sleep(2)
+time.sleep(1)
 
 # close modal
 modal_close = driver.find_elements(By.XPATH, '//button[@data-at="modal_close"]')
@@ -81,35 +82,35 @@ if OVERVIEW_OPTION in overview_titles:
     index = overview_titles.index(OVERVIEW_OPTION)
     next_element = overview_titles[index + 1] if index < len(overview_titles) - 1 else None
 
-    overview = about_text.split(OVERVIEW_OPTION)[1].split(next_element)[0].strip()
+    overview = about_text.split(OVERVIEW_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
 
 # clinical-results
 if CLINICAL_RESULTS_OPTION in overview_titles:
     index = overview_titles.index(CLINICAL_RESULTS_OPTION)
     next_element = overview_titles[index + 1] if index < len(overview_titles) - 1 else None
 
-    clinical_results = about_text.split(CLINICAL_RESULTS_OPTION)[1].split(next_element)[0].strip()
+    clinical_results = about_text.split(CLINICAL_RESULTS_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
 
 # highlight-ingredients
 if IMPORTANT_INGREDIENTS_OPTION in overview_titles:
     index = overview_titles.index(IMPORTANT_INGREDIENTS_OPTION)
     next_element = overview_titles[index + 1] if index < len(overview_titles) - 1 else None
 
-    important_ingredients = about_text.split(IMPORTANT_INGREDIENTS_OPTION)[1].split(next_element)[0].strip()
+    important_ingredients = about_text.split(IMPORTANT_INGREDIENTS_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
 
 # extra_info
 if EXTRA_INFO_OPTION in overview_titles:
     index = overview_titles.index(EXTRA_INFO_OPTION)
     next_element = overview_titles[index + 1] if index < len(overview_titles) - 1 else None
 
-    extra_info = about_text.split(EXTRA_INFO_OPTION)[1].split(next_element)[0].strip()
+    extra_info = about_text.split(EXTRA_INFO_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
 
 # concerns
 if CONCERNS_OPTION in overview_titles:
     index = overview_titles.index(CONCERNS_OPTION)
     next_element = overview_titles[index + 1] if index < len(overview_titles) - 1 else None
 
-    concerns_unparsed = about_text.split(CONCERNS_OPTION)[1].split(next_element)[0].strip()
+    concerns_unparsed = about_text.split(CONCERNS_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
 
 concerns = find_matching_concerns(concerns_unparsed, CONCERNS_LIST)
 
@@ -118,7 +119,7 @@ if SKIN_TYPE_OPTION in overview_titles:
     index = overview_titles.index(SKIN_TYPE_OPTION)
     next_element = overview_titles[index + 1] if index < len(overview_titles) - 1 else None
 
-    skin_type_unparsed = about_text.split(SKIN_TYPE_OPTION)[1].split(next_element)[0].strip()
+    skin_type_unparsed = about_text.split(SKIN_TYPE_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
     skin_type = find_matching_skin(skin_type_unparsed, SKIN_TYPES_LIST)
 
 # highlights
@@ -132,7 +133,22 @@ for highlights_option in highlights_options:
 highlights = find_matching_highlights(highlights_unparsed, HIGHLIGHT_LIST)
 
 
+# vegan
+if VEGAN in highlights:
+    vegan = 1
+else:
+    vegan = 0
 
+# ingredients
+ingredients_list = driver.find_element(By.XPATH, '//div[@aria-labelledby="ingredients_heading"]/div/div').text
+ingredients = parse_ingredients_list(ingredients_list)
+
+# how_to
+how_to = driver.find_element(By.XPATH, '//div[@data-at="how_to_use_section"]').text.replace("\n", " ")
+
+# review_score
+scroll_down(driver)
+review_score = driver.find_element(By.XPATH, '//div[contains(@data-comp, "HistogramChart")]/../following-sibling::div/div/span').text
 
 
 # create dictionary
@@ -151,15 +167,14 @@ product_dictionary = {
     "overview": overview,
     "product-name": product_name,
     "review-score": review_score,
-    "similar1": similar1,
-    "similar2": similar2,
     "skin-type": skin_type,
     "vegan": vegan,
     "volume": volume
 }
 
-# create DataFrame
+print(product_dictionary)
 
+# create DataFrame
 df = pd.DataFrame({
     "PK": PK,
     "SK": SK,

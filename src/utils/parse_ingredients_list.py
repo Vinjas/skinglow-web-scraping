@@ -1,11 +1,12 @@
 import re
 
 
-def parse_ingredients(text):
+def parse_ingredients_list(text):
     parsed_ingredients_list = []
 
-    if "Clean at Sephora" in text:
-        clean_text = re.sub(r"Clean at Sephora.*", "", text)
+    index = text.find("Clean at Sephora")
+    if index != -1:
+        clean_text = text[:index]
     else:
         clean_text = text
 

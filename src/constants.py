@@ -6,6 +6,8 @@ SKIN_TYPE_OPTION = "Skin Type:"
 CONCERNS_OPTION = "Skincare Concerns:"
 EXTRA_INFO_OPTION = "What Else You Need to Know:"
 
+VEGAN = "Vegan"
+
 # host webpage
 HOST = 'https://www.sephora.com'
 
