@@ -48,7 +48,7 @@ how_to_use_button.click()
 
 # scrape data
 # PK
-PK = driver.find_element(By.XPATH, '//*[@data-at="item_sku"]').text.split(" ")[1]
+PK = int(driver.find_element(By.XPATH, '//*[@data-at="item_sku"]').text.split(" ")[1])
 
 # SK
 SK = "product#data_EN"
@@ -148,7 +148,7 @@ how_to = driver.find_element(By.XPATH, '//div[@data-at="how_to_use_section"]').t
 
 # review_score
 scroll_down(driver)
-review_score = driver.find_element(By.XPATH, '//div[contains(@data-comp, "HistogramChart")]/../following-sibling::div/div/span').text
+review_score = float(driver.find_element(By.XPATH, '//div[contains(@data-comp, "HistogramChart")]/../following-sibling::div/div/span').text)
 
 
 # create dictionary
