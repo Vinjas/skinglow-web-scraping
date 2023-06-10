@@ -10,10 +10,13 @@ from src.constants import OVERVIEW_OPTION, CLINICAL_RESULTS_OPTION, IMPORTANT_IN
     CONCERNS_OPTION, EXTRA_INFO_OPTION, SKIN_TYPES_LIST, HIGHLIGHT_LIST, CONCERNS_LIST, VEGAN
 from src.translation.deepl_tranlate import deepl_translate
 from src.translation.google_translate import google_translate
+from src.dynamo_db.put_item_in_table import put_item_in_table
 
 import time
-import pandas as pd
+import decimal
 
+
+start_scrape_time = time.time()
 
 # selenium set-up
 host = 'https://www.sephora.com/product/the-dewy-skin-cream-P441101?skuId=2181006&icid2=products%20grid:p441101:product'
@@ -51,7 +54,8 @@ how_to_use_button.click()
 # scrape data
 # PK
 PK = int(driver.find_element(By.XPATH, '//*[@data-at="item_sku"]').text.split(" ")[1])
-print(f'Start scraping {PK}...')
+print('###########################')
+print(f'[LOG] Start scraping [{PK}]...')
 
 # brand
 brand = driver.find_element(By.XPATH, '//*[@data-at="brand_name"]').text
@@ -151,12 +155,18 @@ how_to = driver.find_element(By.XPATH, '//div[@data-at="how_to_use_section"]').t
 
 # review_score
 scroll_down(driver)
-review_score = float(driver.find_element(By.XPATH, '//div[contains(@data-comp, "HistogramChart")]/../following-sibling::div/div/span').text)
+review_score = decimal.Decimal(driver.find_element(By.XPATH, '//div[contains(@data-comp, "HistogramChart")]/../following-sibling::div/div/span').text)
 
 print('100%')
 driver.quit()
-print(f'Successfully scraped {PK}!')
+
+
+# finish scrape
+execution_time = time.time() - start_scrape_time
+execution_time_rounded = round(execution_time, 2)
+print(f'[SUCCESS] Successfully scraped [{PK}] in {"--- %.2f seconds ---" % execution_time_rounded}')
 print('###########################')
+
 
 # create dictionary
 product_dictionary_EN = {
@@ -182,17 +192,17 @@ product_dictionary_EN = {
 # translation of data
 product_dictionary_translations = {}
 
-LANGUAGES_TO_TRANSLATE = ["es"]
-print(f'Translating into {LANGUAGES_TO_TRANSLATE}...')
+LANGUAGES_TO_TRANSLATE = []
+print(f'[LOG] Translating into {LANGUAGES_TO_TRANSLATE}...')
 
 for language in LANGUAGES_TO_TRANSLATE:
     translated_ingredients = []
     for i in ingredients:
-        translated_ingredients.append(google_translate(i, language))
+        translated_ingredients.append(google_translate(i, language).capitalize())
 
-    product_dictionary_translations[f'{language}'] = {
+    product_dictionary_translations[f'{language.upper()}'] = {
         "PK": PK,
-        "SK": f"product#data_{language}",
+        "SK": f"product#data_{language.upper()}",
         "brand": brand,
         "category#name": category_name,
         "clinical-results": google_translate(clinical_results, language),
@@ -212,17 +222,4 @@ for language in LANGUAGES_TO_TRANSLATE:
 
     print(f'"{language}" done!')
 
-
-print(product_dictionary_EN)
-print(product_dictionary_translations)
-
-# create DataFrame
-df = pd.DataFrame({
-    "PK": PK,
-    #"SK": SK,
-    "brand": brand,
-    "category#name": category_name,
-    "clinical-results": clinical_results,
-    "overview": overview
-}, index=[0])
-
+put_item_in_table(product_dictionary_EN)
