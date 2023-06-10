@@ -6,14 +6,16 @@ from selenium.webdriver.chrome.options import Options
 from src.utils.find_matching_data import find_matching_skin, find_matching_highlights, find_matching_concerns
 from src.utils.parse_ingredients_list import parse_ingredients_list
 from src.utils.scroll_down import scroll_down
-
 from src.constants import OVERVIEW_OPTION, CLINICAL_RESULTS_OPTION, IMPORTANT_INGREDIENTS_OPTION, SKIN_TYPE_OPTION, \
     CONCERNS_OPTION, EXTRA_INFO_OPTION, SKIN_TYPES_LIST, HIGHLIGHT_LIST, CONCERNS_LIST, VEGAN
+from src.translation.deepl_tranlate import deepl_translate
+from src.translation.google_translate import google_translate
 
 import time
 import pandas as pd
 
 
+# selenium set-up
 host = 'https://www.sephora.com/product/the-dewy-skin-cream-P441101?skuId=2181006&icid2=products%20grid:p441101:product'
 path_chromedriver = '/home/daniel/chromedriver/chromedriver'
 
@@ -49,9 +51,7 @@ how_to_use_button.click()
 # scrape data
 # PK
 PK = int(driver.find_element(By.XPATH, '//*[@data-at="item_sku"]').text.split(" ")[1])
-
-# SK
-SK = "product#data_EN"
+print(f'Start scraping {PK}...')
 
 # brand
 brand = driver.find_element(By.XPATH, '//*[@data-at="brand_name"]').text
@@ -62,6 +62,7 @@ category_name = f"{breadcrumbs[1].text}::{breadcrumbs[2].text}"
 
 # volume
 volume = driver.find_element(By.XPATH, '//*[@data-at="sku_name_label"]').text.replace("Size: ", "")
+print('25%')
 
 # product_name
 product_name = driver.find_element(By.XPATH, '//*[@data-at="product_name"]').text
@@ -90,6 +91,7 @@ if CLINICAL_RESULTS_OPTION in overview_titles:
     next_element = overview_titles[index + 1] if index < len(overview_titles) - 1 else None
 
     clinical_results = about_text.split(CLINICAL_RESULTS_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
+print('50%')
 
 # highlight-ingredients
 if IMPORTANT_INGREDIENTS_OPTION in overview_titles:
@@ -121,6 +123,7 @@ if SKIN_TYPE_OPTION in overview_titles:
 
     skin_type_unparsed = about_text.split(SKIN_TYPE_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
     skin_type = find_matching_skin(skin_type_unparsed, SKIN_TYPES_LIST)
+print('75%')
 
 # highlights
 highlights_container = driver.find_element(By.XPATH, '//h2[text()[contains(., "Highlights")]]')
@@ -150,11 +153,15 @@ how_to = driver.find_element(By.XPATH, '//div[@data-at="how_to_use_section"]').t
 scroll_down(driver)
 review_score = float(driver.find_element(By.XPATH, '//div[contains(@data-comp, "HistogramChart")]/../following-sibling::div/div/span').text)
 
+print('100%')
+driver.quit()
+print(f'Successfully scraped {PK}!')
+print('###########################')
 
 # create dictionary
-product_dictionary = {
+product_dictionary_EN = {
     "PK": PK,
-    "SK": SK,
+    "SK": "product#data_EN",
     "brand": brand,
     "category#name": category_name,
     "clinical-results": clinical_results,
@@ -172,12 +179,47 @@ product_dictionary = {
     "volume": volume
 }
 
-print(product_dictionary)
+# translation of data
+product_dictionary_translations = {}
+
+LANGUAGES_TO_TRANSLATE = ["es"]
+print(f'Translating into {LANGUAGES_TO_TRANSLATE}...')
+
+for language in LANGUAGES_TO_TRANSLATE:
+    translated_ingredients = []
+    for i in ingredients:
+        translated_ingredients.append(google_translate(i, language))
+
+    product_dictionary_translations[f'{language}'] = {
+        "PK": PK,
+        "SK": f"product#data_{language}",
+        "brand": brand,
+        "category#name": category_name,
+        "clinical-results": google_translate(clinical_results, language),
+        "concerns": concerns,
+        "extra-info": google_translate(extra_info, language),
+        "highlights": highlights,
+        "how-to": google_translate(how_to, language),
+        "important-ingredients": google_translate(important_ingredients, language),
+        "ingredients": translated_ingredients,
+        "overview": deepl_translate(overview, language),
+        "product-name": deepl_translate(product_name, language),
+        "review-score": review_score,
+        "skin-type": skin_type,
+        "vegan": vegan,
+        "volume": volume
+    }
+
+    print(f'"{language}" done!')
+
+
+print(product_dictionary_EN)
+print(product_dictionary_translations)
 
 # create DataFrame
 df = pd.DataFrame({
     "PK": PK,
-    "SK": SK,
+    #"SK": SK,
     "brand": brand,
     "category#name": category_name,
     "clinical-results": clinical_results,

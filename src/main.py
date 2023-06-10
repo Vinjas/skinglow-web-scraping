@@ -1,7 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 
-from selenium_scripts.sephora_product_list import sephora_product_list
+from scraping_scripts.sephora_product_list import sephora_product_list
 from constants import HOST
 
 path_chromedriver = '/home/daniel/chromedriver/chromedriver'

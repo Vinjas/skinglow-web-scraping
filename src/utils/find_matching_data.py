@@ -26,11 +26,10 @@ def find_matching_skin(string, skin_types_list):
     return matching
 
 
-def find_matching_highlights(item_list, highlights_map):
-    matches = []
-    for item in item_list:
-        for key, value_list in highlights_map.items():
-            if item in value_list:
-                matches.append(item)
-                break
-    return matches
+def find_matching_highlights(input_list, highlight_dict):
+    result = {}
+    for key, values in highlight_dict.items():
+        matches = [element for element in input_list if element in values]
+        if matches:
+            result[key] = matches
+    return result
