@@ -114,55 +114,79 @@ for filename in os.listdir(folder_path):
             about_text = about_container.text
 
             # overview
-            if OVERVIEW_OPTION in overview_titles:
+            if OVERVIEW_OPTION in overview_titles and OVERVIEW_OPTION in about_text:
                 index = overview_titles.index(OVERVIEW_OPTION)
                 next_element = overview_titles[index + 1] if index < len(overview_titles) - 1 else None
 
-                overview = about_text.split(OVERVIEW_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
+                try:
+                    overview = about_text.split(OVERVIEW_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
+                except:
+                    overview = None
+
+                if overview is not None and len(overview.split()) == 1:
+                    overview = None
 
             # clinical-results
-            if CLINICAL_RESULTS_OPTION in overview_titles:
+            if CLINICAL_RESULTS_OPTION in overview_titles and CLINICAL_RESULTS_OPTION in about_text:
                 index = overview_titles.index(CLINICAL_RESULTS_OPTION)
                 next_element = overview_titles[index + 1] if index < len(overview_titles) - 1 else None
 
-                clinical_results = about_text.split(CLINICAL_RESULTS_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
+                try:
+                    clinical_results = about_text.split(CLINICAL_RESULTS_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
+                except:
+                    clinical_results = None
+
+                if clinical_results is not None and len(clinical_results.split()) == 1:
+                    clinical_results = None
             else:
                 clinical_results = None
 
             print('50%')
 
             # highlight-ingredients
-            if IMPORTANT_INGREDIENTS_OPTION in overview_titles:
+            if IMPORTANT_INGREDIENTS_OPTION in overview_titles and IMPORTANT_INGREDIENTS_OPTION in about_text:
                 index = overview_titles.index(IMPORTANT_INGREDIENTS_OPTION)
                 next_element = overview_titles[index + 1] if index < len(overview_titles) - 1 else None
 
-                important_ingredients = about_text.split(IMPORTANT_INGREDIENTS_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
+                try:
+                    important_ingredients = about_text.split(IMPORTANT_INGREDIENTS_OPTION)[1].split(next_element)[
+                        0].strip().replace("\n", " ")
+                except:
+                    important_ingredients = None
 
-                if len(important_ingredients.split()) == 1:
+                if important_ingredients is not None and len(important_ingredients.split()) == 1:
                     important_ingredients = None
             else:
                 important_ingredients = None
 
             # extra_info
-            if EXTRA_INFO_OPTION in overview_titles:
+            if EXTRA_INFO_OPTION in overview_titles and EXTRA_INFO_OPTION in about_text:
                 index = overview_titles.index(EXTRA_INFO_OPTION)
                 next_element = overview_titles[index + 1] if index < len(overview_titles) - 1 else None
 
-                extra_info = about_text.split(EXTRA_INFO_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
+                try:
+                    extra_info = about_text.split(EXTRA_INFO_OPTION)[1].split(next_element)[0].strip().replace("\n",
+                                                                                                               " ")
+                except:
+                    extra_info = None
 
-                if len(extra_info.split()) == 1:
+                if extra_info is not None and len(extra_info.split()) == 1:
                     extra_info = None
             else:
                 extra_info = None
 
             # concerns
-            if CONCERNS_OPTION in overview_titles:
+            if CONCERNS_OPTION in overview_titles and CONCERNS_OPTION in about_text:
                 index = overview_titles.index(CONCERNS_OPTION)
                 next_element = overview_titles[index + 1] if index < len(overview_titles) - 1 else None
 
-                concerns_unparsed = about_text.split(CONCERNS_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
-
-                concerns = find_matching_concerns(concerns_unparsed, CONCERNS_LIST)
+                try:
+                    concerns_unparsed = about_text.split(CONCERNS_OPTION)[1].split(next_element)[0].strip().replace(
+                        "\n", " ")
+                    concerns = find_matching_concerns(concerns_unparsed, CONCERNS_LIST)
+                except:
+                    concerns_unparsed = None
+                    concerns = []
 
                 if len(concerns) == 0:
                     concerns = None
@@ -170,12 +194,17 @@ for filename in os.listdir(folder_path):
                 concerns = None
 
             # skin_type
-            if SKIN_TYPE_OPTION in overview_titles:
+            if SKIN_TYPE_OPTION in overview_titles and SKIN_TYPE_OPTION in about_text:
                 index = overview_titles.index(SKIN_TYPE_OPTION)
                 next_element = overview_titles[index + 1] if index < len(overview_titles) - 1 else None
 
-                skin_type_unparsed = about_text.split(SKIN_TYPE_OPTION)[1].split(next_element)[0].strip().replace("\n", " ")
-                skin_type = find_matching_skin(skin_type_unparsed, SKIN_TYPES_LIST)
+                try:
+                    skin_type_unparsed = about_text.split(SKIN_TYPE_OPTION)[1].split(next_element)[0].strip().replace(
+                        "\n", " ")
+                    skin_type = find_matching_skin(skin_type_unparsed, SKIN_TYPES_LIST)
+                except:
+                    skin_type_unparsed = []
+                    skin_type = None
             else:
                 skin_type = None
 
