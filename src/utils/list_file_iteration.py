@@ -1,3 +1,5 @@
+import os
+import inquirer
 
 
 def save_list_in_file(filename, item_list):
@@ -9,9 +11,9 @@ def save_list_in_file(filename, item_list):
         print(f'[SUCCESS] File {filename}.txt created')
 
 
-def iterate_file_list(filename):
+def iterate_file_list(path):
     # open file and read the content in a list
-    with open(rf'{filename}.txt', 'r') as fp:
+    with open(path, 'r') as fp:
         names = []
 
         for line in fp:
@@ -21,3 +23,5 @@ def iterate_file_list(filename):
 
             # add current item to the list
             names.append(x)
+
+    return names
