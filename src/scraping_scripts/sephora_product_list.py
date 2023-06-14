@@ -6,9 +6,17 @@ from selenium.webdriver.chrome.options import Options
 from src.utils.check_exists_by_xpath import check_exists_by_xpath
 from src.utils.clear_subcategory_name import clear_subcategory_name
 from src.utils.list_file_iteration import save_list_in_file
+from src.utils.save_links_file import save_links_file
 from src.utils.scroll_down import scroll_down
 from src.constants import HOST
 import time
+
+
+total_execution_time_start = time.time()
+
+# define main category to scrap
+CATEGORY = 'Self Tanners'
+
 
 # selenium set-up
 URL = f'{HOST}/shop/skincare'
@@ -34,9 +42,6 @@ if check_exists_by_xpath(driver, '//button[@data-at="modal_close"]'):
     modal_close = driver.find_element(By.XPATH, '//button[@data-at="modal_close"]')
     modal_close.click()
 
-# define main category to scrap
-CATEGORY = 'Moisturizers'
-
 categories_container = driver.find_element(By.XPATH, '//ul[@data-at="categories_large_view"]')
 category = categories_container.find_element(By.XPATH, f'.//a[text()[contains(., "{CATEGORY}")]]')
 
@@ -50,12 +55,40 @@ if check_exists_by_xpath(driver, '//button[@data-at="modal_close"]'):
 category_main = CATEGORY.lower()
 
 # navigate all subcategories
-subcategories = driver.find_elements(By.XPATH, '//ul[@data-at="categories_large_view"]/li')
+if check_exists_by_xpath(driver, '//ul[@data-at="categories_large_view"]/li'):
+    subcategories = driver.find_elements(By.XPATH, '//ul[@data-at="categories_large_view"]/li')
+else:
+    SUBCATEGORY = clear_subcategory_name(category_main)
+    time.sleep(2)
+
+    scroll_down(driver)
+
+    # check if there is more products to show
+    show_more_xpath = '//button[text()[contains(., "Show More Products")]]'
+    while check_exists_by_xpath(driver, show_more_xpath):
+        show_more_button = driver.find_element(By.XPATH, '//button[text()[contains(., "Show More Products")]]')
+        show_more_button.click()
+        time.sleep(2)
+        scroll_down(driver)
+
+    # get product links
+    product_links = []
+    product_tiles = driver.find_elements(By.XPATH, '//a[contains(@data-comp, "ProductTile")]')
+
+    for tile in product_tiles:
+        product_links.append(tile.get_attribute('href'))
+
+    filename = f'{CATEGORY.lower()}::{SUBCATEGORY.lower()}_{len(product_links)}_links'
+    save_links_file(filename, CATEGORY.lower(), product_links)
+
+    driver.quit()
 
 for index, subcategory in enumerate(subcategories, start=1):
     start_scrape_time = time.time()
+    time.sleep(2)
 
     try:
+        subcategory = subcategories[0]
         subcategory.click()
     except:
         subcategory = driver.find_element(By.XPATH, f'//ul[@data-at="categories_large_view"]/li[{index}]')
@@ -81,8 +114,8 @@ for index, subcategory in enumerate(subcategories, start=1):
     for tile in product_tiles:
         product_links.append(tile.get_attribute('href'))
 
-    file_name = f'{CATEGORY.lower()}::{SUBCATEGORY.lower()}_{len(product_links)}_links'
-    save_list_in_file(file_name, product_links)
+    filename = f'{CATEGORY.lower()}::{SUBCATEGORY.lower()}_{len(product_links)}_links'
+    save_links_file(filename, CATEGORY.lower(), product_links)
 
     # finish scrape
     execution_time = time.time() - start_scrape_time
@@ -92,6 +125,16 @@ for index, subcategory in enumerate(subcategories, start=1):
         f'[SUCCESS] Successfully scraped [{CATEGORY}::{SUBCATEGORY}] in {"--- %.2f seconds ---" % execution_time_rounded}')
     print('###########################')
 
-    previous_category = driver.find_element(By.XPATH, f'//nav[@aria-label="Breadcrumb"]/ol/li[2]/a')
+    breadcrumbs = driver.find_element(By.XPATH, f'//nav[@aria-label="Breadcrumb"]')
+    driver.execute_script("arguments[0].scrollIntoView();", breadcrumbs)
+
+    previous_category = breadcrumbs.find_element(By.XPATH, f'./ol/li[2]/a')
     previous_category.click()
-    time.sleep(2)
+
+    # finish scrape
+    total_execution_time = time.time() - total_execution_time_start
+    total_execution_time_rounded = round(execution_time, 2)
+    print('###########################')
+    print(
+        f'[SUCCESS] everything in {"--- %.2f seconds ---" % execution_time_rounded}')
+    print('###########################')
