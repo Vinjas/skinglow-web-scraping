@@ -1,63 +1,97 @@
 from selenium.webdriver.common.by import By
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+
+from src.utils.check_exists_by_xpath import check_exists_by_xpath
+from src.utils.clear_subcategory_name import clear_subcategory_name
+from src.utils.list_file_iteration import save_list_in_file
 from src.utils.scroll_down import scroll_down
+from src.constants import HOST
 import time
 
-host = 'https://www.sephora.com'
+# selenium set-up
+URL = f'{HOST}/shop/skincare'
 path_chromedriver = '/home/daniel/chromedriver/chromedriver'
 
-options = webdriver.ChromeOptions()
+options = Options()
+options.add_argument("--disable-infobars")
+options.add_argument("start-maximized")
+options.add_argument("--disable-extensions")
+# block chrome notifications
+options.add_experimental_option(
+    "prefs", {"profile.default_content_setting_values.notifications": 2}
+)
+
 service = Service(path_chromedriver)
 driver = webdriver.Chrome(service=service, options=options)
-driver.maximize_window()
 
-# def sephora_product_list(driver, host):
-url = f'{host}/shop/skincare'
-driver.get(url)
-time.sleep(1)
+driver.get(URL)
+time.sleep(2)
 
 # close modal
-modal_close = driver.find_elements(By.XPATH, '//button[@data-at="modal_close"]')
-if modal_close.size() != 0:
-    modal_close[0].click()
+if check_exists_by_xpath(driver, '//button[@data-at="modal_close"]'):
+    modal_close = driver.find_element(By.XPATH, '//button[@data-at="modal_close"]')
+    modal_close.click()
 
 # define main category to scrap
-category_to_scrap = 'Moisturizers'
+CATEGORY = 'Moisturizers'
+
 categories_container = driver.find_element(By.XPATH, '//ul[@data-at="categories_large_view"]')
-category = categories_container.find_element(By.XPATH, f'.//a[text()[contains(., "{category_to_scrap}")]]')
+category = categories_container.find_element(By.XPATH, f'.//a[text()[contains(., "{CATEGORY}")]]')
 
 category.click()
 time.sleep(2)
+# close modal
+if check_exists_by_xpath(driver, '//button[@data-at="modal_close"]'):
+    modal_close = driver.find_element(By.XPATH, '//button[@data-at="modal_close"]')
+    modal_close.click()
 
-category_main = category_to_scrap.lower()
+category_main = CATEGORY.lower()
 
 # navigate all subcategories
 subcategories = driver.find_elements(By.XPATH, '//ul[@data-at="categories_large_view"]/li')
 
-subcategories[-1].click()
-time.sleep(2)
-scroll_down(driver)
+for index, subcategory in enumerate(subcategories, start=1):
+    start_scrape_time = time.time()
 
-# check if there is more products to show
-show_more_button = driver.find_elements(By.XPATH, '//button[text()[contains(., "Show More Products")]]')
-if show_more_button.size() != 0:
-    show_more_button[0].click()
+    try:
+        subcategory.click()
+    except:
+        subcategory = driver.find_element(By.XPATH, f'//ul[@data-at="categories_large_view"]/li[{index}]')
+        subcategory.click()
+
+    SUBCATEGORY = clear_subcategory_name(subcategory.text)
+    time.sleep(2)
+
     scroll_down(driver)
 
-# get product links
-product_links = []
-product_tiles = driver.find_elements(By.XPATH, '//a[contains(@data-comp, "ProductTile")]')
+    # check if there is more products to show
+    show_more_xpath = '//button[text()[contains(., "Show More Products")]]'
+    while check_exists_by_xpath(driver, show_more_xpath):
+        show_more_button = driver.find_element(By.XPATH, '//button[text()[contains(., "Show More Products")]]')
+        show_more_button.click()
+        time.sleep(2)
+        scroll_down(driver)
 
-for tile in product_tiles:
-    product_links.append(tile.get_attribute('href'))
+    # get product links
+    product_links = []
+    product_tiles = driver.find_elements(By.XPATH, '//a[contains(@data-comp, "ProductTile")]')
 
-for link in product_links:
-    sephora_scrape_product(link)
+    for tile in product_tiles:
+        product_links.append(tile.get_attribute('href'))
 
-print(product_links)
+    file_name = f'{CATEGORY.lower()}::{SUBCATEGORY.lower()}_{len(product_links)}_links'
+    save_list_in_file(file_name, product_links)
 
-#product_titles = driver.find_elements(By.XPATH, '//a[@data-comp="LazyLoad ProductTile "]/span[contains(@class, "ProductTile-name")]')
+    # finish scrape
+    execution_time = time.time() - start_scrape_time
+    execution_time_rounded = round(execution_time, 2)
+    print('###########################')
+    print(
+        f'[SUCCESS] Successfully scraped [{CATEGORY}::{SUBCATEGORY}] in {"--- %.2f seconds ---" % execution_time_rounded}')
+    print('###########################')
 
-#for title in product_titles:
-#   print(title.text)
+    previous_category = driver.find_element(By.XPATH, f'//nav[@aria-label="Breadcrumb"]/ol/li[2]/a')
+    previous_category.click()
+    time.sleep(2)

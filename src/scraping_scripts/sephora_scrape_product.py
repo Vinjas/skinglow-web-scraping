@@ -5,9 +5,8 @@ from selenium.webdriver.chrome.options import Options
 
 from src.utils.find_matching_data import find_matching_skin, find_matching_highlights, find_matching_concerns
 from src.utils.parse_ingredients_list import parse_ingredients_list
-from src.utils.scroll_down import scroll_down
 from src.constants import OVERVIEW_OPTION, CLINICAL_RESULTS_OPTION, IMPORTANT_INGREDIENTS_OPTION, SKIN_TYPE_OPTION, \
-    CONCERNS_OPTION, EXTRA_INFO_OPTION, SKIN_TYPES_LIST, HIGHLIGHT_LIST, CONCERNS_LIST, VEGAN
+    CONCERNS_OPTION, EXTRA_INFO_OPTION, SKIN_TYPES_LIST, HIGHLIGHT_LIST, CONCERNS_LIST, VEGAN, HOST
 from src.translation.deepl_tranlate import deepl_translate
 from src.translation.google_translate import google_translate
 from src.dynamo_db.put_item_in_table import put_item_in_table
@@ -19,7 +18,7 @@ import decimal
 start_scrape_time = time.time()
 
 # selenium set-up
-host = 'https://www.sephora.com/product/the-dewy-skin-cream-P441101?skuId=2181006&icid2=products%20grid:p441101:product'
+URL = f'{HOST}/product/the-dewy-skin-cream-P441101?skuId=2181006&icid2=products%20grid:p441101:product'
 path_chromedriver = '/home/daniel/chromedriver/chromedriver'
 
 options = Options()
@@ -34,7 +33,7 @@ options.add_experimental_option(
 service = Service(path_chromedriver)
 driver = webdriver.Chrome(service=service, options=options)
 
-driver.get(host)
+driver.get(URL)
 time.sleep(1)
 
 # close modal
@@ -154,7 +153,10 @@ ingredients = parse_ingredients_list(ingredients_list)
 how_to = driver.find_element(By.XPATH, '//div[@data-at="how_to_use_section"]').text.replace("\n", " ")
 
 # review_score
-scroll_down(driver)
+review_button = driver.find_element(By.XPATH, '//span[@data-at="number_of_reviews"]')
+review_button.click()
+time.sleep(1)
+
 review_score = decimal.Decimal(driver.find_element(By.XPATH, '//div[contains(@data-comp, "HistogramChart")]/../following-sibling::div/div/span').text)
 
 print('100%')
