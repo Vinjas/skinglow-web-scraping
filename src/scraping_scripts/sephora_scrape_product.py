@@ -336,7 +336,7 @@ for filename in os.listdir(folder_path):
 
             print(product_dictionary_EN)
 
-            put_item_in_table(product_dictionary_EN)
+            put_item_in_table(product_dictionary_EN, 'skinglow-products')
 
             delete_line(file_link, link)
             print(f'Line deleted {link}')
