@@ -8,7 +8,7 @@ from src.utils.clear_subcategory_name import clear_subcategory_name
 from src.utils.list_file_iteration import save_list_in_file
 from src.utils.save_links_file import save_links_file
 from src.utils.scroll_down import scroll_down
-from src.constants import HOST
+from src.constants import HOST, DRIVER_PATH
 import time
 
 
@@ -20,7 +20,7 @@ CATEGORY = 'Self Tanners'
 
 # selenium set-up
 URL = f'{HOST}/shop/skincare'
-path_chromedriver = '/home/daniel/chromedriver/chromedriver'
+path_chromedriver = DRIVER_PATH
 
 options = Options()
 options.add_argument("--disable-infobars")

@@ -1,4 +1,5 @@
 import os
+import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -6,10 +7,10 @@ from selenium.webdriver.chrome.options import Options
 
 from src.utils.check_exists_by_xpath import check_exists_by_xpath
 from src.utils.find_matching_data import find_matching_skin, find_matching_highlights, find_matching_concerns
-from src.utils.list_file_iteration import iterate_file_list
+from src.utils.list_file_iteration import iterate_file_list, delete_line
 from src.utils.parse_ingredients_list import parse_ingredients_list
 from src.constants import OVERVIEW_OPTION, CLINICAL_RESULTS_OPTION, IMPORTANT_INGREDIENTS_OPTION, SKIN_TYPE_OPTION, \
-    CONCERNS_OPTION, EXTRA_INFO_OPTION, SKIN_TYPES_LIST, HIGHLIGHT_LIST, CONCERNS_LIST, VEGAN, HOST
+    CONCERNS_OPTION, EXTRA_INFO_OPTION, SKIN_TYPES_LIST, HIGHLIGHT_LIST, CONCERNS_LIST, VEGAN, HOST, DRIVER_PATH
 from src.translation.deepl_tranlate import deepl_translate
 from src.translation.google_translate import google_translate
 from src.dynamo_db.put_item_in_table import put_item_in_table
@@ -17,14 +18,15 @@ from src.dynamo_db.put_item_in_table import put_item_in_table
 import time
 import decimal
 
+from src.utils.save_image import save_image
 
-CATEGORY = "cleansers"
+CATEGORY = "treatments"
 LANGUAGES_TO_TRANSLATE = []
 
 
 # selenium set-up
 start_scrape_time = time.time()
-path_chromedriver = '/home/daniel/chromedriver/chromedriver'
+path_chromedriver = DRIVER_PATH
 
 options = Options()
 options.add_argument("--disable-infobars")
@@ -52,6 +54,8 @@ for filename in os.listdir(folder_path):
         print(links_list)
 
         for index, link in enumerate(links_list):
+            print(f'[LOG] Start scraping: {link}')
+
             URL = link
 
             driver.get(URL)
@@ -67,23 +71,62 @@ for filename in os.listdir(folder_path):
             # open everything needed
             if check_exists_by_xpath(driver, '//button[text()[contains(., "Show more")]]'):
                 show_more_button = driver.find_element(By.XPATH, '//button[text()[contains(., "Show more")]]')
-                show_more_button.click()
+                try:
+                    show_more_button.click()
+                except:
+                    pass
 
             if check_exists_by_xpath(driver, '//button[@data-at="ingredients"]'):
                 ingredients_button = driver.find_element(By.XPATH, '//button[@data-at="ingredients"]')
-                ingredients_button.click()
+                try:
+                    ingredients_button.click()
+                except:
+                    pass
 
             if check_exists_by_xpath(driver, '//button[@data-at="how_to_use_btn"]'):
                 how_to_use_button = driver.find_element(By.XPATH, '//button[@data-at="how_to_use_btn"]')
-                how_to_use_button.click()
+                try:
+                    how_to_use_button.click()
+                except:
+                    pass
+
 
             ##################################
 
             # scrape data
             # PK
-            PK = int(driver.find_element(By.XPATH, '//*[@data-at="item_sku"]').text.split(" ")[1])
-            print('###########################')
-            print(f'[LOG] Start scraping [{PK}]...')
+            if check_exists_by_xpath(driver, '//*[@data-at="item_sku"]'):
+                try:
+                    PK = int(driver.find_element(By.XPATH, '//*[@data-at="item_sku"]').text.split(" ")[1])
+                except:
+                    print(f'[ERROR] Error on PK {link}')
+                    continue
+                print('###########################')
+                print(f'[LOG] Start scraping [{PK}]...')
+            else:
+                print(f'[ERROR] No se ha localizado SKU en {link}')
+                delete_line(file_link, link)
+                continue
+
+            # images
+            carousel = driver.find_element(By.XPATH, '//div[@data-comp="Carousel "]')
+            images_elem_list = carousel.find_elements(By.XPATH, './div/ul/li')
+            img_list = []
+
+            for img_data in images_elem_list:
+                if len(img_list) == 2:
+                    break
+
+                try:
+                    img_elem = img_data.find_element(By.XPATH, './/img')
+                    img_src = img_elem.get_attribute('src')
+                    img_list.append(img_src)
+                except:
+                    pass
+
+            # save images
+            for i, src in enumerate(img_list, start=1):
+                save_image(src, f"{PK}_{i}.jpg", CATEGORY, filename.split("_")[0])
 
             # category_name
             category_name = filename.split("_")[0]
@@ -125,6 +168,8 @@ for filename in os.listdir(folder_path):
 
                 if overview is not None and len(overview.split()) == 1:
                     overview = None
+            else:
+                overview = None
 
             # clinical-results
             if CLINICAL_RESULTS_OPTION in overview_titles and CLINICAL_RESULTS_OPTION in about_text:
@@ -230,6 +275,7 @@ for filename in os.listdir(folder_path):
                     highlights = None
             else:
                 highlights = None
+                vegan = 0
 
             # ingredients
             if check_exists_by_xpath(driver, '//div[@aria-labelledby="ingredients_heading"]/div/div'):
@@ -291,6 +337,9 @@ for filename in os.listdir(folder_path):
             print(product_dictionary_EN)
 
             put_item_in_table(product_dictionary_EN)
+
+            delete_line(file_link, link)
+            print(f'Line deleted {link}')
 
             # translation of data
             # product_dictionary_translations = {}

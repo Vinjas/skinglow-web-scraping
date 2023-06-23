@@ -10,6 +10,7 @@ VEGAN = "vegan"
 
 # host webpage
 HOST = 'https://www.sephora.com'
+DRIVER_PATH = '/home/daniel/chromedriver/chromedriver'
 
 # concerns list
 CONCERNS_LIST = [

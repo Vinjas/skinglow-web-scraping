@@ -25,3 +25,13 @@ def iterate_file_list(path):
             names.append(x)
 
     return names
+
+
+def delete_line(file, line_to_delete):
+    with open(file, 'r') as f:
+        lines = f.readlines()
+
+    lines = [line for line in lines if line.strip() != line_to_delete.strip()]
+
+    with open(file, 'w') as f:
+        f.writelines(lines)
