@@ -15,7 +15,7 @@ total_execution_time_start = time.time()
 URL = 'https://incidecoder.com/decode-inci'
 path_chromedriver = DRIVER_PATH
 
-with open('ing_list_test.json', 'r') as file:
+with open('ing_list.json', 'r') as file:
     ing_list_full = json.load(file)
 
 for index, product in enumerate(ing_list_full):
@@ -47,7 +47,7 @@ for index, product in enumerate(ing_list_full):
         ing_list_full.remove(product)
         print(f"El producto {product['ingredient-name']} en el índice {index} ha sido eliminado")
 
-        with open('ing_list_test.json', 'w') as file:
+        with open('ing_list.json', 'w') as file:
             json.dump(ing_list_full, file, indent=2)
         continue
 
@@ -62,17 +62,17 @@ for index, product in enumerate(ing_list_full):
 
     textarea.send_keys(product_ingredients_string)
     time.sleep(1)
-    # textarea.send_keys(Keys.ENTER)
     try:
         submit_button.click()
-        time.sleep(5)
+        time.sleep(4)
     except:
-        print("[ERROR] Error submitting")
-        continue
+        print("[ERROR] Error Captcha")
+        break
 
     # check if there are coincidences
     if not check_exists_by_xpath(driver, '//a[contains(@class, "ingred-link black")]'):
-        continue
+        print("[ERROR] Error Captcha | Coincidences")
+        break
 
     # click "more" buttons
     if check_exists_by_xpath(driver, '//button[contains(@class, "link-like showmore-link-desktop showmore-link")]'):
@@ -108,7 +108,10 @@ for index, product in enumerate(ing_list_full):
         key_ingredients.append(key_ingredient_dict)
 
     # put key ingredients in product database
-    add_column_in_table(product['PK'], "product#data_EN", "key-ingredients", "skinglow-products", key_ingredient_dict)
+    try:
+        add_column_in_table(product['PK'], "product#data_EN", "key-ingredients", "skinglow-products", key_ingredient_dict)
+    except NameError:
+        pass
 
     print("#######################")
     print("[SUCCESS] key_ingredients", key_ingredients)
@@ -199,7 +202,7 @@ for index, product in enumerate(ing_list_full):
     # Delete JSON entry after finish
     ing_list_full.remove(product)
 
-    with open('ing_list_test.json', 'w') as file:
+    with open('ing_list.json', 'w') as file:
         json.dump(ing_list_full, file, indent=2)
 
     driver.quit()
